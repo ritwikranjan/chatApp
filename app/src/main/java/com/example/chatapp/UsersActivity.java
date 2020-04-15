@@ -5,10 +5,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
@@ -23,6 +26,7 @@ public class UsersActivity extends AppCompatActivity {
     MaterialToolbar materialToolbar;
     RecyclerView userList;
     DatabaseReference mUsersDatabase;
+    ProgressDialog mProgressBar;
 
 
     @Override
@@ -33,6 +37,11 @@ public class UsersActivity extends AppCompatActivity {
         setSupportActionBar(materialToolbar);
         getSupportActionBar().setTitle("Users");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        mProgressBar = new ProgressDialog(this);
+        mProgressBar.setTitle("Loading");
+        mProgressBar.setMessage("Please wait while profile is loading");
+        mProgressBar.setCanceledOnTouchOutside(false);
+        mProgressBar.show();
         userList = findViewById(R.id.userList);
         userList.setLayoutManager(new LinearLayoutManager(this));
         userList.setHasFixedSize(true);
@@ -45,7 +54,7 @@ public class UsersActivity extends AppCompatActivity {
                             @Override
                             public Users parseSnapshot(@NonNull DataSnapshot snapshot) {
                                 return new Users(snapshot.child("name").getValue( ).toString( ),
-                                        snapshot.child("img").getValue( ).toString( ),
+                                        snapshot.child("thumb_img").getValue( ).toString( ),
                                         snapshot.child("status").getValue( ).toString( ));
                             }
                         })
@@ -56,6 +65,19 @@ public class UsersActivity extends AppCompatActivity {
                 holder.setUserName(model.getName());
                 holder.setUserProfilePic(model.getImg());
                 holder.setUserStatus(model.getStatus());
+                final String userId = getRef(position).getKey();
+                holder.root.setOnClickListener(new View.OnClickListener( ) {
+                    @Override
+                    public void onClick(View v) {
+                        Intent i = new Intent(getBaseContext(),ProfileActivity.class);
+                        i.putExtra("uid",userId);
+                        startActivity(i);
+                        //Toast.makeText(getBaseContext(),userId,Toast.LENGTH_LONG).show();
+                    }
+                });
+                mProgressBar.dismiss();
+
+
 
             }
 
@@ -79,6 +101,12 @@ public class UsersActivity extends AppCompatActivity {
         //firebaseRecyclerAdapter.startListening();
 
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause( );
+        //mProgressBar.dismiss();
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.example.chatapp;
 
 import android.net.Uri;
 import android.view.View;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -12,25 +13,31 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 class UserViewHolder extends RecyclerView.ViewHolder {
 
-    CircleImageView userProfilePic;
-    TextView userName, userStatus;
+    RelativeLayout root;
+    private CircleImageView userProfilePic;
+    private TextView userName, userStatus;
 
     UserViewHolder(@NonNull View itemView) {
         super(itemView);
+        root = itemView.findViewById(R.id.userDetail);
         userProfilePic = itemView.findViewById(R.id.userProfilePic);
         userName = itemView.findViewById(R.id.userName);
         userStatus = itemView.findViewById(R.id.userStatus);
     }
 
-    public void setUserProfilePic(String photoUri) {
-        Picasso.get().load(Uri.parse(photoUri)).into(userProfilePic);
+    void setUserProfilePic(String photoUri) {
+        if(photoUri.equals("default")){
+            userProfilePic.setImageResource(R.drawable.profile_image);
+        } else {
+            Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(userProfilePic);
+        }
     }
 
-    public void setUserName(String userName) {
+    void setUserName(String userName) {
         this.userName.setText(userName);
     }
 
-    public void setUserStatus(String userStatus) {
+    void setUserStatus(String userStatus) {
         this.userStatus.setText(userStatus);
     }
 }

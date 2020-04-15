@@ -33,7 +33,8 @@ public class splashScreen extends AppCompatActivity {
 
 
         // Choose authentication providers
-        final List<AuthUI.IdpConfig> providers = Collections.singletonList(
+        final List<AuthUI.IdpConfig> providers = Arrays.asList(
+                new AuthUI.IdpConfig.EmailBuilder( ).build( ),
                 new AuthUI.IdpConfig.GoogleBuilder( ).build( ));
 
         new Handler( ).postDelayed(new Runnable( ) {
@@ -48,7 +49,9 @@ public class splashScreen extends AppCompatActivity {
                             AuthUI.getInstance()
                                     .createSignInIntentBuilder()
                                     .setIsSmartLockEnabled(false)
+                                    .setTheme(R.style.AppTheme)
                                     .setAvailableProviders(providers)
+                                    .setAlwaysShowSignInMethodScreen(true)
                                     .build(),
                             RC_SIGN_IN);
                 }
@@ -72,8 +75,16 @@ public class splashScreen extends AppCompatActivity {
                 HashMap<String,String> userMap = new HashMap<>();
                 userMap.put("name",displayName);
                 userMap.put("status",status);
-                userMap.put("img",mUser.getPhotoUrl().toString());
-                userMap.put("thumb_img","default");
+                if(mUser.getPhotoUrl()!=null) {
+                    userMap.put("img", mUser.getPhotoUrl( ).toString( ));
+                } else{
+                    userMap.put("img", "default");
+                }
+                if(mUser.getPhotoUrl()!=null) {
+                    userMap.put("thumb_img", mUser.getPhotoUrl( ).toString( ));
+                } else {
+                    userMap.put("thumb_img", "default");
+                }
                 myRef.setValue(userMap);
                 // ...
             }

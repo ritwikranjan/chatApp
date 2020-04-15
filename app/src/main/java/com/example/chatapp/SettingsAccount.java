@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.ContentLoadingProgressBar;
 import de.hdodenhof.circleimageview.CircleImageView;
+import id.zelory.compressor.Compressor;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -40,6 +41,11 @@ import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+
 public class SettingsAccount extends AppCompatActivity {
 
     static String name,photoUri,thumbPhotoUri,status;
@@ -61,34 +67,7 @@ public class SettingsAccount extends AppCompatActivity {
         profilePic = findViewById(R.id.profile_image);
         changePic = findViewById(R.id.changePic);
         changeStatus = findViewById(R.id.changeStatus);
-        mProgressBar = new ProgressDialog(this);
-        mProgressBar.setTitle("Loading");
-        mProgressBar.setMessage("Please Wait While contents are loading");
-        mProgressBar.setCanceledOnTouchOutside(false);
-        mProgressBar.show();
 
-        user = FirebaseAuth.getInstance().getCurrentUser();
-        mStorageRef = FirebaseStorage.getInstance().getReference();
-        mRef = FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUid());
-        mRef.addValueEventListener(new ValueEventListener( ) {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                name = dataSnapshot.child("name").getValue().toString();
-                photoUri = dataSnapshot.child("img").getValue().toString();
-                thumbPhotoUri = dataSnapshot.child("thumb_img").getValue().toString();
-                status = dataSnapshot.child("status").getValue().toString();
-                displayName.setText(name);
-                displayStatus.setText(status);
-                mProgressBar.hide();
-                Picasso.get().load(Uri.parse(photoUri)).into(profilePic);
-               // profilePic.setImageBitmap(Bitmap.createBitmap(new Bitmap()));
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
 
         changeStatus.setOnClickListener(new View.OnClickListener( ) {
             @Override
@@ -136,6 +115,40 @@ public class SettingsAccount extends AppCompatActivity {
             }
         });
 
+        mProgressBar = new ProgressDialog(this);
+        mProgressBar.setTitle("Loading");
+        mProgressBar.setMessage("Please Wait While contents are loading");
+        mProgressBar.setCanceledOnTouchOutside(false);
+        mProgressBar.show();
+        user = FirebaseAuth.getInstance().getCurrentUser();
+        mStorageRef = FirebaseStorage.getInstance().getReference();
+        mRef = FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUid());
+        mRef.addValueEventListener(new ValueEventListener( ) {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                name = dataSnapshot.child("name").getValue().toString();
+                photoUri = dataSnapshot.child("img").getValue().toString();
+                thumbPhotoUri = dataSnapshot.child("thumb_img").getValue().toString();
+                status = dataSnapshot.child("status").getValue().toString();
+                displayName.setText(name);
+                displayStatus.setText(status);
+                mProgressBar.hide();
+                if(!photoUri.equals("default")) {
+                    Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(profilePic);
+                } else{
+                    profilePic.setImageResource(R.drawable.profile_image);
+                }
+               // profilePic.setImageBitmap(Bitmap.createBitmap(new Bitmap()));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+
 
 
 
@@ -152,7 +165,25 @@ public class SettingsAccount extends AppCompatActivity {
                 mProgressBar.setCanceledOnTouchOutside(false);
                 mProgressBar.show();
                 Uri resultUri = result.getUri( );
+                File thumbFile = new File(resultUri.getPath());
+                Bitmap thumbBitmap = null;
+                try {
+                    thumbBitmap = new Compressor(this)
+                            .setMaxHeight(150)
+                            .setMaxWidth(150)
+                            .setQuality(60)
+                            .compressToBitmap(thumbFile);
+                } catch (IOException e) {
+                    e.printStackTrace( );
+                }
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                thumbBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                final byte[] thumbByte = baos.toByteArray();
+
                 final StorageReference filePath = mStorageRef.child("profile_pic/"+user.getUid()+".jpg");
+                final StorageReference thumbPath = mStorageRef.child("profile_pic/thumb_pic/" + user.getUid()+".jpg");
+
                 filePath.putFile(resultUri).addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>( ) {
                     @Override
                     public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
@@ -160,12 +191,29 @@ public class SettingsAccount extends AppCompatActivity {
                             filePath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>( ) {
                                 @Override
                                 public void onSuccess(Uri uri) {
-                                    mRef.child("img").setValue(uri.toString()).addOnCompleteListener(new OnCompleteListener<Void>( ) {
+                                    //for Actual Image
+                                    mRef.child("img").setValue(uri.toString());
+                                    //for Thumbnail
+                                    UploadTask uploadTask = thumbPath.putBytes(thumbByte);
+                                    uploadTask.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>( ) {
                                         @Override
-                                        public void onComplete(@NonNull Task<Void> task) {
-                                            mProgressBar.hide();
+                                        public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                                            if(task.isSuccessful()){
+                                                thumbPath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>( ) {
+                                                    @Override
+                                                    public void onSuccess(Uri uri) {
+                                                        mRef.child("thumb_img").setValue(uri.toString()).addOnCompleteListener(new OnCompleteListener<Void>( ) {
+                                                            @Override
+                                                            public void onComplete(@NonNull Task<Void> task) {
+                                                                mProgressBar.hide();
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            }
                                         }
                                     });
+
                                 }
                             });
                         }

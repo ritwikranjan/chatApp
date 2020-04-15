@@ -3,4 +3,9 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="req_sent">Friend Request Sent</string>
+    <string name="accept_request">Accept Friend Request</string>
+    <string name="unfriend">Unfriend</string>
+    <string name="cancel_request">Cancel Friend Request</string>
+    <string name="send_request">Send Friend Request</string>
 </resources>

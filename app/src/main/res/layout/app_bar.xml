@@ -2,6 +2,9 @@
 <com.google.android.material.appbar.MaterialToolbar xmlns:android="http://schemas.android.com/apk/res/android"
     style="@style/Theme.AppCompat.DayNight.DarkActionBar"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:background="@color/colorPrimaryDark">
 
 </com.google.android.material.appbar.MaterialToolbar>
