@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -37,7 +38,10 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Request;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
@@ -45,6 +49,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class SettingsAccount extends AppCompatActivity {
 
@@ -81,7 +86,7 @@ public class SettingsAccount extends AppCompatActivity {
                 builder.setView(dialogView);
                 // Get the custom alert dialog view widgets reference
                 final TextInputLayout et_name = dialogView.findViewById(R.id.statusText);
-                et_name.getEditText().setText(displayStatus.getText());
+                Objects.requireNonNull(et_name.getEditText( )).setText(displayStatus.getText());
                 builder.setPositiveButton("Submit", new DialogInterface.OnClickListener( ) {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -123,21 +128,33 @@ public class SettingsAccount extends AppCompatActivity {
         user = FirebaseAuth.getInstance().getCurrentUser();
         mStorageRef = FirebaseStorage.getInstance().getReference();
         mRef = FirebaseDatabase.getInstance().getReference().child("Users").child(user.getUid());
+        mRef.keepSynced(true);
         mRef.addValueEventListener(new ValueEventListener( ) {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                name = dataSnapshot.child("name").getValue().toString();
-                photoUri = dataSnapshot.child("img").getValue().toString();
-                thumbPhotoUri = dataSnapshot.child("thumb_img").getValue().toString();
-                status = dataSnapshot.child("status").getValue().toString();
+                name = Objects.requireNonNull(dataSnapshot.child("name").getValue( )).toString();
+                photoUri = Objects.requireNonNull(dataSnapshot.child("img").getValue( )).toString();
+                thumbPhotoUri = Objects.requireNonNull(dataSnapshot.child("thumb_img").getValue( )).toString();
+                status = Objects.requireNonNull(dataSnapshot.child("status").getValue( )).toString();
                 displayName.setText(name);
                 displayStatus.setText(status);
-                mProgressBar.hide();
                 if(!photoUri.equals("default")) {
-                    Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(profilePic);
+                    Picasso.get( )
+                            .load(Uri.parse(photoUri))
+                            .networkPolicy(NetworkPolicy.OFFLINE)
+                            .placeholder(R.drawable.profile_image)
+                            .into(profilePic, new Callback( ) {
+                                @Override
+                                public void onSuccess() { }
+                                @Override
+                                public void onError(Exception e) {
+                                    Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(profilePic);
+                                }
+                            });
                 } else{
                     profilePic.setImageResource(R.drawable.profile_image);
                 }
+                mProgressBar.dismiss();
                // profilePic.setImageBitmap(Bitmap.createBitmap(new Bitmap()));
             }
 
@@ -165,7 +182,7 @@ public class SettingsAccount extends AppCompatActivity {
                 mProgressBar.setCanceledOnTouchOutside(false);
                 mProgressBar.show();
                 Uri resultUri = result.getUri( );
-                File thumbFile = new File(resultUri.getPath());
+                File thumbFile = new File(Objects.requireNonNull(resultUri.getPath( )));
                 Bitmap thumbBitmap = null;
                 try {
                     thumbBitmap = new Compressor(this)
@@ -178,6 +195,7 @@ public class SettingsAccount extends AppCompatActivity {
                 }
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                assert thumbBitmap != null;
                 thumbBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
                 final byte[] thumbByte = baos.toByteArray();
 
@@ -226,7 +244,9 @@ public class SettingsAccount extends AppCompatActivity {
                 });
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
                 Exception error = result.getError( );
+                error.printStackTrace();
             }
         }
     }
+
 }

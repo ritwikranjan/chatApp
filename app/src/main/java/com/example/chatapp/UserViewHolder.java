@@ -5,6 +5,8 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import androidx.annotation.NonNull;
@@ -25,11 +27,22 @@ class UserViewHolder extends RecyclerView.ViewHolder {
         userStatus = itemView.findViewById(R.id.userStatus);
     }
 
-    void setUserProfilePic(String photoUri) {
+    void setUserProfilePic(final String photoUri) {
         if(photoUri.equals("default")){
             userProfilePic.setImageResource(R.drawable.profile_image);
         } else {
-            Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(userProfilePic);
+            Picasso.get( )
+                    .load(Uri.parse(photoUri))
+                    .networkPolicy(NetworkPolicy.OFFLINE)
+                    .placeholder(R.drawable.profile_image)
+                    .into(userProfilePic, new Callback( ) {
+                        @Override
+                        public void onSuccess() { }
+                        @Override
+                        public void onError(Exception e) {
+                            Picasso.get( ).load(Uri.parse(photoUri)).placeholder(R.drawable.profile_image).into(userProfilePic);
+                        }
+                    });
         }
     }
 

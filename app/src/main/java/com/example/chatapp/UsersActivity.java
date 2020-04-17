@@ -46,6 +46,7 @@ public class UsersActivity extends AppCompatActivity {
         userList.setLayoutManager(new LinearLayoutManager(this));
         userList.setHasFixedSize(true);
         mUsersDatabase = FirebaseDatabase.getInstance().getReference().child("Users");
+        mUsersDatabase.keepSynced(true);
 
         FirebaseRecyclerOptions<Users> options =
                 new FirebaseRecyclerOptions.Builder<Users>( )

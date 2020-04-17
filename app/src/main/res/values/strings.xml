@@ -8,4 +8,6 @@
     <string name="unfriend">Unfriend</string>
     <string name="cancel_request">Cancel Friend Request</string>
     <string name="send_request">Send Friend Request</string>
+    <string name="channel_name_request">friendRequest</string>
+    <string name="channel_description_request">Recieved Friend Request</string>
 </resources>
